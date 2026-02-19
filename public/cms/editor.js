@@ -410,23 +410,25 @@
       row.appendChild(dateDiv);
       row.appendChild(detailsDiv);
 
-      // Make all data-cms fields editable
+      // Make all data-cms fields editable — use direct object reference instead of index
       row.querySelectorAll('[data-cms-field]').forEach(function (el) {
         el.classList.add('cms-editable');
         el.setAttribute('contenteditable', 'true');
         el.addEventListener('input', function () {
-          setNestedValue(pendingConcertsChanges, el.dataset.cmsField, el.innerText.trim());
+          var fieldName = el.dataset.cmsField.split('.').pop();
+          newConcert[fieldName] = el.innerText.trim();
           markDirty();
         });
       });
 
-      // Add delete button
+      // Add delete button — use indexOf on the object reference for correct splice
       var delBtn = document.createElement('button');
       delBtn.className = 'cms-concert-delete';
       delBtn.textContent = '\u00d7';
       delBtn.title = 'Delete concert';
       delBtn.addEventListener('click', function () {
-        pendingConcertsChanges.concerts.splice(idx, 1);
+        var actualIdx = pendingConcertsChanges.concerts.indexOf(newConcert);
+        if (actualIdx !== -1) pendingConcertsChanges.concerts.splice(actualIdx, 1);
         row.remove();
         markDirty();
         showToast('Concert removed.');
@@ -1037,6 +1039,7 @@
     var current = obj;
     for (var i = 0; i < keys.length - 1; i++) {
       var key = isNaN(keys[i]) ? keys[i] : parseInt(keys[i]);
+      if (current[key] === undefined || current[key] === null) return;
       current = current[key];
     }
     var lastKey = isNaN(keys[keys.length - 1]) ? keys[keys.length - 1] : parseInt(keys[keys.length - 1]);
