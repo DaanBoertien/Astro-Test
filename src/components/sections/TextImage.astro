@@ -1,0 +1,103 @@
+---
+import { t } from '../../lib/content';
+
+interface Props {
+  section: { id: string; content: Record<string, any> };
+  locale: string;
+  pageSlug: string;
+}
+
+const { section, locale, pageSlug } = Astro.props;
+const { content } = section;
+const title = t(content.title, locale);
+const body = t(content.body, locale);
+const image = content.image || '';
+const imageAlt = t(content.imageAlt, locale);
+const imagePosition = content.imagePosition || 'left';
+const file = `pages/${pageSlug || 'home'}`;
+---
+
+<section class="section">
+  <div class="container">
+    {title && (
+      <h2
+        class="section-title"
+        data-cms-file={file}
+        data-cms-section={section.id}
+        data-cms-field="title"
+        data-cms-type="text"
+      >{title}</h2>
+    )}
+    <div class:list={['text-image-grid', { reversed: imagePosition === 'right' }]}>
+      <div class="text-image-photo">
+        <img
+          src={image}
+          alt={imageAlt}
+          data-cms-file={file}
+          data-cms-section={section.id}
+          data-cms-field="image"
+          data-cms-type="image"
+        />
+      </div>
+      <div class="text-image-body">
+        <div
+          data-cms-file={file}
+          data-cms-section={section.id}
+          data-cms-field="body"
+          data-cms-type="textarea"
+        >
+          {body.split('\n\n').map(paragraph => (
+            <p>{paragraph}</p>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .text-image-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .text-image-grid.reversed {
+    grid-template-columns: 1.5fr 1fr;
+  }
+
+  .text-image-grid.reversed .text-image-photo {
+    order: 2;
+  }
+
+  .text-image-photo img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+
+  .text-image-body p {
+    margin-bottom: 1.25rem;
+  }
+
+  .text-image-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 768px) {
+    .text-image-grid,
+    .text-image-grid.reversed {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .text-image-grid.reversed .text-image-photo {
+      order: 0;
+    }
+
+    .text-image-photo img {
+      aspect-ratio: 4 / 3;
+    }
+  }
+</style>

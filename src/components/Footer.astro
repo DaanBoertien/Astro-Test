@@ -1,14 +1,17 @@
 ---
+import { loadSite } from '../lib/content';
+
+const site = loadSite();
 const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer">
   <div class="container footer-inner">
-    <p>&copy; {year} Elena Vasquez. All rights reserved.</p>
+    <p>&copy; {year} {site.copyrightName}. All rights reserved.</p>
     <div class="social-links">
-      <a href="#" aria-label="Instagram">Instagram</a>
-      <a href="#" aria-label="YouTube">YouTube</a>
-      <a href="#" aria-label="Spotify">Spotify</a>
+      {site.socialLinks.map(link => (
+        <a href={link.url} aria-label={link.label}>{link.label}</a>
+      ))}
     </div>
   </div>
 </footer>

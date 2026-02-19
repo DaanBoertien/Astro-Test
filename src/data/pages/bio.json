@@ -1,0 +1,32 @@
+{
+  "slug": "bio",
+  "title": { "en": "Biography" },
+  "showInNav": true,
+  "navOrder": 1,
+  "sections": [
+    {
+      "id": "bio-intro",
+      "type": "text-image",
+      "content": {
+        "title": { "en": "Biography" },
+        "body": { "en": "Born in Buenos Aires to a family of musicians, Elena Vasquez began her piano studies at the age of five under the guidance of her grandmother, a former student of Martha Argerich. By sixteen, she had already performed as a soloist with the Buenos Aires Philharmonic.\n\nElena went on to study at the Juilliard School in New York, where she worked closely with renowned pedagogue Emanuel Ax. Her breakthrough came in 2018 when she won First Prize at the International Chopin Piano Competition in Warsaw, captivating audiences with what the jury described as \"an interpretation of extraordinary poetry and intelligence.\"\n\nSince then, Elena has performed with leading orchestras around the world, including the Berlin Philharmonic, London Symphony Orchestra, and the New York Philharmonic. Her recordings of the complete Chopin Nocturnes and Debussy's Preludes have been met with widespread critical acclaim.\n\nBeyond the concert stage, Elena is passionate about music education. She regularly gives masterclasses at conservatories across Europe and South America, and founded the Vasquez Foundation, which provides scholarships to young pianists from underrepresented communities.\n\nElena currently divides her time between Amsterdam and Buenos Aires. When not touring, she can be found exploring the city's art galleries or cooking traditional Argentine cuisine for friends." },
+        "image": "https://images.unsplash.com/photo-1594897030264-ab7d87efc473?w=800&q=80",
+        "imageAlt": { "en": "Elena Vasquez at the piano" },
+        "imagePosition": "left"
+      }
+    },
+    {
+      "id": "awards",
+      "type": "list",
+      "content": {
+        "title": { "en": "Awards & Recognition" },
+        "items": [
+          { "en": "First Prize, International Chopin Piano Competition (2018)" },
+          { "en": "Avery Fisher Career Grant (2019)" },
+          { "en": "Gramophone Award for Best Instrumental Recording (2021)" },
+          { "en": "Royal Philharmonic Society Young Artist Award (2022)" }
+        ]
+      }
+    }
+  ]
+}

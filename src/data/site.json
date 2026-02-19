@@ -1,0 +1,12 @@
+{
+  "siteTitle": "Elena Vasquez",
+  "defaultLocale": "en",
+  "locales": ["en"],
+  "localeNames": { "en": "English" },
+  "copyrightName": "Elena Vasquez",
+  "socialLinks": [
+    { "label": "Instagram", "url": "#" },
+    { "label": "YouTube", "url": "#" },
+    { "label": "Spotify", "url": "#" }
+  ]
+}

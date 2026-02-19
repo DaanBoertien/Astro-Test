@@ -1,18 +1,21 @@
 ---
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { loadSite } from '../lib/content';
 import '../styles/global.css';
 
 interface Props {
   title: string;
   description?: string;
+  locale?: string;
 }
 
-const { title, description = 'Elena Vasquez — Concert Pianist' } = Astro.props;
+const site = loadSite();
+const { title, description = `${site.siteTitle} — Concert Pianist`, locale = site.defaultLocale } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -23,12 +26,15 @@ const { title, description = 'Elena Vasquez — Concert Pianist' } = Astro.props
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lora:wght@400;500;700&display=swap" rel="stylesheet" />
     <title>{title}</title>
+    <link rel="stylesheet" href="/cms/editor.css" />
   </head>
   <body>
-    <Header />
+    <Header locale={locale} />
     <main>
       <slot />
     </main>
     <Footer />
+    <script is:inline src="https://unpkg.com/netlify-identity-widget@1.9.2/build/netlify-identity-widget.js"></script>
+    <script is:inline src="/cms/editor.js"></script>
   </body>
 </html>

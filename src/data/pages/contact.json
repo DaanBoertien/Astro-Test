@@ -1,0 +1,16 @@
+{
+  "slug": "contact",
+  "title": { "en": "Contact" },
+  "showInNav": true,
+  "navOrder": 3,
+  "sections": [
+    {
+      "id": "contact-form",
+      "type": "contact-form",
+      "content": {
+        "title": { "en": "Contact" },
+        "introText": { "en": "For booking inquiries, press requests, or collaborations, please use the form below. I look forward to hearing from you." }
+      }
+    }
+  ]
+}

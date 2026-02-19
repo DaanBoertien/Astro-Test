@@ -1,0 +1,170 @@
+---
+import { t, loadConcerts, formatDate } from '../../lib/content';
+
+interface Props {
+  section: { id: string; content: Record<string, any> };
+  locale: string;
+  pageSlug: string;
+}
+
+const { section, locale, pageSlug } = Astro.props;
+const { content } = section;
+const upcomingTitle = t(content.upcomingTitle, locale);
+const pastTitle = t(content.pastTitle, locale);
+const file = `pages/${pageSlug || 'home'}`;
+
+const allConcerts = loadConcerts();
+const today = new Date();
+
+const upcoming = allConcerts
+  .filter(c => new Date(c.date) >= today)
+  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+const past = allConcerts
+  .filter(c => new Date(c.date) < today)
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+---
+
+{upcoming.length > 0 && (
+  <section class="section" data-cms-section={section.id}>
+    <div class="container">
+      <h2
+        class="section-title"
+        data-cms-file={file}
+        data-cms-section={section.id}
+        data-cms-field="upcomingTitle"
+        data-cms-type="text"
+      >{upcomingTitle}</h2>
+      <div class="concert-list" data-cms-file="concerts" data-cms-type="concert-list">
+        {upcoming.map((concert, i) => (
+          <div class="concert-row" data-cms-concert-index={allConcerts.indexOf(concert)}>
+            <div
+              class="concert-date"
+              data-cms-file="concerts"
+              data-cms-field={`concerts.${allConcerts.indexOf(concert)}.date`}
+              data-cms-type="date"
+            >{formatDate(concert.date)}</div>
+            <div class="concert-details">
+              <strong
+                data-cms-file="concerts"
+                data-cms-field={`concerts.${allConcerts.indexOf(concert)}.venue`}
+                data-cms-type="text"
+              >{concert.venue}</strong>
+              {' — '}
+              <span
+                data-cms-file="concerts"
+                data-cms-field={`concerts.${allConcerts.indexOf(concert)}.city`}
+                data-cms-type="text"
+              >{concert.city}</span>
+              <span
+                class="concert-program"
+                data-cms-file="concerts"
+                data-cms-field={`concerts.${allConcerts.indexOf(concert)}.program`}
+                data-cms-type="text"
+              >{concert.program}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+{past.length > 0 && (
+  <section class="section past-section" data-cms-section={section.id}>
+    <div class="container">
+      <h2
+        data-cms-file={file}
+        data-cms-section={section.id}
+        data-cms-field="pastTitle"
+        data-cms-type="text"
+      >{pastTitle}</h2>
+      <div class="concert-list">
+        {past.map(concert => (
+          <div class="concert-row past" data-cms-concert-index={allConcerts.indexOf(concert)}>
+            <div
+              class="concert-date"
+              data-cms-file="concerts"
+              data-cms-field={`concerts.${allConcerts.indexOf(concert)}.date`}
+              data-cms-type="date"
+            >{formatDate(concert.date)}</div>
+            <div class="concert-details">
+              <strong
+                data-cms-file="concerts"
+                data-cms-field={`concerts.${allConcerts.indexOf(concert)}.venue`}
+                data-cms-type="text"
+              >{concert.venue}</strong>
+              {' — '}
+              <span
+                data-cms-file="concerts"
+                data-cms-field={`concerts.${allConcerts.indexOf(concert)}.city`}
+                data-cms-type="text"
+              >{concert.city}</span>
+              <span
+                class="concert-program"
+                data-cms-file="concerts"
+                data-cms-field={`concerts.${allConcerts.indexOf(concert)}.program`}
+                data-cms-type="text"
+              >{concert.program}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .concert-list {
+    max-width: 800px;
+  }
+
+  .concert-row {
+    display: flex;
+    gap: 2rem;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--color-border);
+    align-items: baseline;
+  }
+
+  .concert-date {
+    min-width: 180px;
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .concert-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .concert-program {
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  .concert-row.past {
+    opacity: 0.7;
+  }
+
+  .past-section {
+    background: #F3F0EB;
+  }
+
+  h2 {
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .concert-row {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .concert-date {
+      min-width: auto;
+    }
+  }
+</style>

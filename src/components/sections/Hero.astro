@@ -1,0 +1,86 @@
+---
+import { t } from '../../lib/content';
+
+interface Props {
+  section: { id: string; content: Record<string, any> };
+  locale: string;
+  pageSlug: string;
+}
+
+const { section, locale, pageSlug } = Astro.props;
+const { content } = section;
+const title = t(content.title, locale);
+const subtitle = t(content.subtitle, locale);
+const image = content.image || '';
+---
+
+<section
+  class="hero"
+  style={`background-image: url('${image}')`}
+  data-cms-file={`pages/${pageSlug || 'home'}`}
+  data-cms-section={section.id}
+  data-cms-field="image"
+  data-cms-type="background-image"
+>
+  <div class="hero-overlay">
+    <div class="container hero-content">
+      <h1
+        data-cms-file={`pages/${pageSlug || 'home'}`}
+        data-cms-section={section.id}
+        data-cms-field="title"
+        data-cms-type="text"
+      >{title}</h1>
+      {subtitle && (
+        <p
+          class="hero-subtitle"
+          data-cms-file={`pages/${pageSlug || 'home'}`}
+          data-cms-section={section.id}
+          data-cms-field="subtitle"
+          data-cms-type="text"
+        >{subtitle}</p>
+      )}
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    height: 70vh;
+    min-height: 400px;
+    background: center/cover no-repeat;
+    position: relative;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-content {
+    text-align: center;
+    color: #fff;
+  }
+
+  .hero-content h1 {
+    font-size: 4rem;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  @media (max-width: 768px) {
+    .hero-content h1 {
+      font-size: 2.5rem;
+    }
+  }
+</style>

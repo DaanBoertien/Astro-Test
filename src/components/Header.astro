@@ -1,32 +1,73 @@
 ---
-const currentPath = Astro.url.pathname;
+import { loadSite, getNavItems, pagePath, loadPages, t } from '../lib/content';
 
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/bio', label: 'Bio' },
-  { href: '/concerts', label: 'Concerts' },
-  { href: '/contact', label: 'Contact' },
-];
+interface Props {
+  locale: string;
+}
+
+const { locale } = Astro.props;
+const site = loadSite();
+const navItems = getNavItems(locale);
+const currentPath = Astro.url.pathname;
+const showLangSwitcher = site.locales.length > 1;
+
+function getLangLinks() {
+  const pages = loadPages();
+  const pathWithoutLocale = currentPath.replace(/^\/[a-z]{2}(\/|$)/, '/');
+  const normalizedPath = pathWithoutLocale === '/' ? '' : pathWithoutLocale.replace(/^\/|\/$/g, '');
+  const currentPage = pages.find(p => p.slug === normalizedPath) || pages.find(p => p.slug === '');
+
+  if (!currentPage) return [];
+
+  return site.locales.map(loc => ({
+    locale: loc,
+    label: site.localeNames[loc] || loc.toUpperCase(),
+    href: pagePath(currentPage, loc),
+    active: loc === locale,
+  }));
+}
+
+const langLinks = showLangSwitcher ? getLangLinks() : [];
 ---
 
 <header class="site-header">
   <div class="container header-inner">
-    <a href="/" class="site-title">Elena Vasquez</a>
+    <a href={locale === site.defaultLocale ? '/' : `/${locale}`} class="site-title">
+      {site.siteTitle}
+    </a>
+
     <button class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
       <span></span>
       <span></span>
       <span></span>
     </button>
+
     <nav class="main-nav" aria-label="Main navigation">
       <ul>
-        {navLinks.map(link => (
+        {navItems.map(item => (
           <li>
-            <a href={link.href} class:list={[{ active: currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href)) }]}>
-              {link.label}
+            <a
+              href={item.href}
+              class:list={[{ active: currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href)) }]}
+            >
+              {item.label}
             </a>
           </li>
         ))}
       </ul>
+
+      {showLangSwitcher && (
+        <div class="lang-switcher">
+          {langLinks.map(link => (
+            <a
+              href={link.href}
+              class:list={['lang-link', { active: link.active }]}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+      )}
     </nav>
   </div>
 </header>
@@ -69,6 +110,12 @@ const navLinks = [
     color: var(--color-accent);
   }
 
+  .main-nav {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
   .main-nav ul {
     display: flex;
     list-style: none;
@@ -88,6 +135,26 @@ const navLinks = [
   .main-nav a.active {
     color: var(--color-accent);
     border-bottom-color: var(--color-accent);
+  }
+
+  .lang-switcher {
+    display: flex;
+    gap: 0.5rem;
+    padding-left: 1rem;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .lang-link {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.5rem;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .lang-link.active {
+    color: var(--color-accent);
+    font-weight: 700;
   }
 
   .menu-toggle {
@@ -122,16 +189,24 @@ const navLinks = [
       background: var(--color-bg);
       border-bottom: 1px solid var(--color-border);
       padding: 1rem 0;
+      flex-direction: column;
+      gap: 1rem;
     }
 
     .main-nav.open {
-      display: block;
+      display: flex;
     }
 
     .main-nav ul {
       flex-direction: column;
       align-items: center;
       gap: 1rem;
+    }
+
+    .lang-switcher {
+      border-left: none;
+      padding-left: 0;
+      justify-content: center;
     }
   }
 </style>

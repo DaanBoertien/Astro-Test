@@ -1,0 +1,59 @@
+---
+import { t } from '../../lib/content';
+
+interface Props {
+  section: { id: string; content: Record<string, any> };
+  locale: string;
+  pageSlug: string;
+}
+
+const { section, locale, pageSlug } = Astro.props;
+const { content } = section;
+const title = t(content.title, locale);
+const body = t(content.body, locale);
+---
+
+<section class="section">
+  <div class="container text-block">
+    {title && (
+      <h2
+        class="section-title"
+        data-cms-file={`pages/${pageSlug || 'home'}`}
+        data-cms-section={section.id}
+        data-cms-field="title"
+        data-cms-type="text"
+      >{title}</h2>
+    )}
+    <div
+      class="text-body"
+      data-cms-file={`pages/${pageSlug || 'home'}`}
+      data-cms-section={section.id}
+      data-cms-field="body"
+      data-cms-type="textarea"
+    >
+      {body.split('\n\n').map(paragraph => (
+        <p>{paragraph}</p>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .text-block {
+    max-width: 750px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .text-body {
+    font-size: 1.1rem;
+  }
+
+  .text-body p {
+    margin-bottom: 1.25rem;
+  }
+
+  .text-body p:last-child {
+    margin-bottom: 0;
+  }
+</style>

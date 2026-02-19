@@ -1,0 +1,57 @@
+---
+import { t } from '../../lib/content';
+
+interface Props {
+  section: { id: string; content: Record<string, any> };
+  locale: string;
+  pageSlug: string;
+}
+
+const { section, locale, pageSlug } = Astro.props;
+const { content } = section;
+const title = t(content.title, locale);
+const description = t(content.description, locale);
+const buttonText = t(content.buttonText, locale);
+const buttonLink = content.buttonLink || '#';
+const file = `pages/${pageSlug || 'home'}`;
+---
+
+<section class="section cta-section">
+  <div class="container cta-block">
+    <h2
+      data-cms-file={file}
+      data-cms-section={section.id}
+      data-cms-field="title"
+      data-cms-type="text"
+    >{title}</h2>
+    <p
+      data-cms-file={file}
+      data-cms-section={section.id}
+      data-cms-field="description"
+      data-cms-type="text"
+    >{description}</p>
+    <a
+      href={buttonLink}
+      class="btn"
+      data-cms-file={file}
+      data-cms-section={section.id}
+      data-cms-field="buttonText"
+      data-cms-type="text"
+    >{buttonText}</a>
+  </div>
+</section>
+
+<style>
+  .cta-section {
+    background: #F3F0EB;
+  }
+
+  .cta-block {
+    text-align: center;
+  }
+
+  .cta-block p {
+    margin: 0.75rem 0 1.5rem;
+    color: var(--color-text-light);
+  }
+</style>

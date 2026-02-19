@@ -1,0 +1,43 @@
+{
+  "slug": "",
+  "title": { "en": "Home" },
+  "showInNav": true,
+  "navOrder": 0,
+  "sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "content": {
+        "title": { "en": "Elena Vasquez" },
+        "subtitle": { "en": "Concert Pianist" },
+        "image": "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=1600&q=80"
+      }
+    },
+    {
+      "id": "intro",
+      "type": "text",
+      "content": {
+        "title": { "en": "" },
+        "body": { "en": "With performances spanning the great concert halls of Europe and the Americas, Elena Vasquez brings a rare combination of technical brilliance and profound emotional depth to the classical piano repertoire. Her interpretations of Chopin, Rachmaninoff, and Debussy have been praised by critics as \"luminous\" and \"utterly captivating.\"" }
+      }
+    },
+    {
+      "id": "upcoming",
+      "type": "concert-list",
+      "content": {
+        "upcomingTitle": { "en": "Upcoming Concerts" },
+        "pastTitle": { "en": "Past Performances" }
+      }
+    },
+    {
+      "id": "cta",
+      "type": "cta",
+      "content": {
+        "title": { "en": "Get in Touch" },
+        "description": { "en": "For booking inquiries, collaborations, or press requests." },
+        "buttonText": { "en": "Contact" },
+        "buttonLink": "/contact"
+      }
+    }
+  ]
+}

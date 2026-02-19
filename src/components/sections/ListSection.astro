@@ -1,0 +1,68 @@
+---
+import { t } from '../../lib/content';
+
+interface Props {
+  section: { id: string; content: Record<string, any> };
+  locale: string;
+  pageSlug: string;
+}
+
+const { section, locale, pageSlug } = Astro.props;
+const { content } = section;
+const title = t(content.title, locale);
+const items: Record<string, string>[] = content.items || [];
+const file = `pages/${pageSlug || 'home'}`;
+---
+
+<section class="section awards-section">
+  <div class="container">
+    {title && (
+      <h2
+        class="section-title"
+        data-cms-file={file}
+        data-cms-section={section.id}
+        data-cms-field="title"
+        data-cms-type="text"
+      >{title}</h2>
+    )}
+    <ul
+      class="awards-list"
+      data-cms-file={file}
+      data-cms-section={section.id}
+      data-cms-field="items"
+      data-cms-type="list"
+    >
+      {items.map((item, i) => (
+        <li
+          data-cms-file={file}
+          data-cms-section={section.id}
+          data-cms-field={`items.${i}`}
+          data-cms-type="text"
+        >{t(item, locale)}</li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .awards-section {
+    background: #F3F0EB;
+  }
+
+  .awards-list {
+    max-width: 600px;
+    margin: 0 auto;
+    list-style: none;
+  }
+
+  .awards-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+    text-align: center;
+    color: var(--color-text-light);
+  }
+
+  .awards-list li:last-child {
+    border-bottom: none;
+  }
+</style>
