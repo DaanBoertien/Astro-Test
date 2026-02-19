@@ -53,6 +53,12 @@
       "venue": "New Venue",
       "city": "City",
       "program": "Program"
+    },
+    {
+      "date": "2026-02-19",
+      "venue": "Chassé Theater",
+      "city": "Breda",
+      "program": "Program"
     }
   ]
 }
