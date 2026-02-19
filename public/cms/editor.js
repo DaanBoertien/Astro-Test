@@ -117,6 +117,17 @@
     window.addEventListener('beforeunload', function (e) {
       if (dirty) { e.preventDefault(); e.returnValue = ''; }
     });
+
+    // Intercept all internal links to preserve #cms hash during navigation
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a');
+      if (!link || !editMode) return;
+      var href = link.getAttribute('href');
+      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#')) return;
+      // Internal link — append #cms so CMS re-activates on the new page
+      e.preventDefault();
+      window.location.href = href + HASH_TRIGGER;
+    });
   }
 
   // ── Initialize Editable Elements ───────────────────────────
