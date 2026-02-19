@@ -14,6 +14,11 @@
   let sidebarOpen = false;
   let dirty = false;
 
+  const AVAILABLE_LOCALES = {
+    en: 'English', nl: 'Nederlands', de: 'Deutsch',
+    fr: 'Français', es: 'Español', it: 'Italiano', pt: 'Português'
+  };
+
   // ── Bootstrap ──────────────────────────────────────────────
   function init() {
     if (window.location.hash !== HASH_TRIGGER) return;
@@ -77,7 +82,14 @@
       pendingConcertsChanges = structuredClone(concertsData);
       currentLocale = siteData.defaultLocale;
 
-      var pageFiles = ['home', 'bio', 'concerts', 'contact'];
+      // Dynamically discover pages via manifest (fallback to known pages)
+      var pageFiles;
+      try {
+        pageFiles = await fetchJson('/data/pages-manifest.json');
+      } catch (e) {
+        pageFiles = ['home', 'bio', 'concerts', 'contact'];
+      }
+
       for (var i = 0; i < pageFiles.length; i++) {
         try {
           var data = await fetchJson('/data/pages/' + pageFiles[i] + '.json');
@@ -225,7 +237,8 @@
       var file = container.dataset.cmsFile;
       var section = container.dataset.cmsSection;
       var field = container.dataset.cmsField;
-      var pageData = pendingChanges[file.replace('pages/', '')];
+      var pageName = file.replace('pages/', '');
+      var pageData = pendingChanges[pageName];
       if (!pageData) return;
 
       var sec = pageData.sections.find(function (s) { return s.id === section; });
@@ -237,8 +250,20 @@
       var newItem = {};
       siteData.locales.forEach(function (loc) { newItem[loc] = 'New item'; });
       items.push(newItem);
+
+      // Render the new item in the DOM
+      var newEl = document.createElement('li');
+      newEl.textContent = 'New item';
+      newEl.setAttribute('data-cms-file', file);
+      newEl.setAttribute('data-cms-section', section);
+      newEl.setAttribute('data-cms-field', field + '.' + (items.length - 1));
+      newEl.classList.add('cms-editable');
+      initTextEditable(newEl);
+      addItemDeleteBtn(newEl);
+      container.insertBefore(newEl, addBtn);
+
       markDirty();
-      showToast('Item added. Save to see it rendered.');
+      showToast('Item added.');
     });
   }
 
@@ -294,14 +319,49 @@
     container.appendChild(addBtn);
 
     addBtn.addEventListener('click', function () {
-      pendingConcertsChanges.concerts.push({
+      var newConcert = {
         date: new Date().toISOString().slice(0, 10),
         venue: 'New Venue',
         city: 'City',
         program: 'Program'
+      };
+      var idx = pendingConcertsChanges.concerts.length;
+      pendingConcertsChanges.concerts.push(newConcert);
+
+      // Render a new editable concert row in the DOM
+      var row = document.createElement('div');
+      row.className = 'concert-row cms-new-concert-row';
+      row.dataset.cmsConcertIndex = idx;
+      row.innerHTML =
+        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.date">' + escapeHtml(newConcert.date) + '</span>' +
+        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.venue">' + escapeHtml(newConcert.venue) + '</span>' +
+        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.city">' + escapeHtml(newConcert.city) + '</span>' +
+        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.program">' + escapeHtml(newConcert.program) + '</span>';
+
+      // Attach input handlers to each editable span
+      row.querySelectorAll('[contenteditable]').forEach(function (el) {
+        el.addEventListener('input', function () {
+          setNestedValue(pendingConcertsChanges, el.dataset.cmsField, el.innerText.trim());
+          markDirty();
+        });
       });
+
+      // Add delete button
+      var delBtn = document.createElement('button');
+      delBtn.className = 'cms-concert-delete';
+      delBtn.textContent = '\u00d7';
+      delBtn.title = 'Delete concert';
+      delBtn.addEventListener('click', function () {
+        pendingConcertsChanges.concerts.splice(idx, 1);
+        row.remove();
+        markDirty();
+        showToast('Concert removed.');
+      });
+      row.appendChild(delBtn);
+
+      container.insertBefore(row, addBtn);
       markDirty();
-      showToast('Concert added. Save and reload to see it.');
+      showToast('Concert added. Edit the fields below, then save.');
     });
   }
 
@@ -349,13 +409,15 @@
     var html = '';
 
     // Language section
-    html += '<div class="cms-sidebar-section"><h3>Language</h3><div class="cms-lang-tabs">';
-    siteData.locales.forEach(function (loc) {
+    html += '<div class="cms-sidebar-section"><h3>Languages</h3><div class="cms-lang-tabs">';
+    pendingSiteChanges.locales.forEach(function (loc) {
       var active = loc === currentLocale ? ' active' : '';
-      var label = siteData.localeNames[loc] || loc.toUpperCase();
+      var label = pendingSiteChanges.localeNames[loc] || AVAILABLE_LOCALES[loc] || loc.toUpperCase();
       html += '<button class="cms-lang-tab' + active + '" data-locale="' + loc + '">' + escapeHtml(label) + '</button>';
     });
-    html += '</div></div>';
+    html += '</div>';
+    html += '<button class="cms-add-btn" id="cms-manage-languages" style="margin-top:0.5rem">Manage languages</button>';
+    html += '</div>';
 
     // Pages section
     html += '<div class="cms-sidebar-section"><h3>Pages</h3><ul class="cms-page-list">';
@@ -408,9 +470,14 @@
       tab.addEventListener('click', function () {
         currentLocale = tab.dataset.locale;
         refreshSidebar();
-        showToast('Editing in: ' + (siteData.localeNames[currentLocale] || currentLocale));
+        showToast('Editing in: ' + (pendingSiteChanges.localeNames[currentLocale] || currentLocale));
       });
     });
+
+    var manageLangBtn = document.getElementById('cms-manage-languages');
+    if (manageLangBtn) {
+      manageLangBtn.addEventListener('click', function () { showManageLanguagesModal(); });
+    }
 
     document.querySelectorAll('.cms-page-item').forEach(function (item) {
       item.addEventListener('click', function (e) {
@@ -418,7 +485,7 @@
         var page = pendingChanges[item.dataset.page];
         if (page) {
           var href = page.slug === '' ? '/' : '/' + page.slug;
-          if (currentLocale !== siteData.defaultLocale) {
+          if (currentLocale !== pendingSiteChanges.defaultLocale) {
             href = '/' + currentLocale + (page.slug ? '/' + page.slug : '');
           }
           window.location.href = href + HASH_TRIGGER;
@@ -458,10 +525,13 @@
         var pageName = getCurrentPageSlug() === '' ? 'home' : getCurrentPageSlug();
         var pageData = pendingChanges[pageName];
         if (pageData && confirm('Delete this section?')) {
-          pageData.sections.splice(idx, 1);
+          var removed = pageData.sections.splice(idx, 1)[0];
+          // Remove the section from the DOM if possible
+          var domSection = document.querySelector('[data-cms-section-id="' + removed.id + '"]');
+          if (domSection) domSection.remove();
           markDirty();
           refreshSidebar();
-          showToast('Section deleted. Save and reload to see changes.');
+          showToast('Section deleted.');
         }
       });
     });
@@ -495,6 +565,108 @@
     showToast('Section reordered. Save and reload to see changes.');
   }
 
+  // ── Manage Languages Modal ────────────────────────────────
+  function showManageLanguagesModal() {
+    var overlay = document.createElement('div');
+    overlay.className = 'cms-modal-overlay';
+
+    var html = '<div class="cms-modal"><h3>Manage Languages</h3>' +
+      '<p style="color:#aaa;font-size:0.8rem;margin-bottom:1rem">Choose up to 3 languages. The first selected language is the default.</p>';
+
+    var currentLocales = pendingSiteChanges.locales.slice();
+
+    Object.keys(AVAILABLE_LOCALES).forEach(function (code) {
+      var checked = currentLocales.indexOf(code) !== -1;
+      var isDefault = code === pendingSiteChanges.defaultLocale;
+      html += '<label class="cms-lang-checkbox" style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;cursor:pointer;color:#ddd">' +
+        '<input type="checkbox" data-locale="' + code + '"' + (checked ? ' checked' : '') + (isDefault ? ' disabled' : '') + ' />' +
+        '<span>' + escapeHtml(AVAILABLE_LOCALES[code]) + ' (' + code + ')' + (isDefault ? ' — default' : '') + '</span>' +
+        '</label>';
+    });
+
+    html += '<button class="cms-modal-option" id="cms-lang-save" style="width:100%;margin-top:1rem">Apply</button>' +
+      '<button class="cms-modal-cancel" id="cms-lang-cancel">Cancel</button></div>';
+
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+
+    document.getElementById('cms-lang-cancel').addEventListener('click', function () { overlay.remove(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+
+    document.getElementById('cms-lang-save').addEventListener('click', function () {
+      var selected = [];
+      overlay.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+        if (cb.checked) selected.push(cb.dataset.locale);
+      });
+
+      if (selected.length === 0) {
+        showToast('You must have at least one language.', 'error');
+        return;
+      }
+      if (selected.length > 3) {
+        showToast('Maximum 3 languages allowed.', 'error');
+        return;
+      }
+
+      // Ensure default locale stays first
+      var defaultLoc = pendingSiteChanges.defaultLocale;
+      if (selected.indexOf(defaultLoc) === -1) {
+        selected.unshift(defaultLoc);
+      } else if (selected[0] !== defaultLoc) {
+        selected.splice(selected.indexOf(defaultLoc), 1);
+        selected.unshift(defaultLoc);
+      }
+
+      pendingSiteChanges.locales = selected;
+      var names = {};
+      selected.forEach(function (code) {
+        names[code] = AVAILABLE_LOCALES[code] || code;
+      });
+      pendingSiteChanges.localeNames = names;
+
+      // Add empty locale entries to all translatable fields in all pages
+      Object.keys(pendingChanges).forEach(function (pageKey) {
+        var page = pendingChanges[pageKey];
+        selected.forEach(function (loc) {
+          if (page.title && typeof page.title === 'object' && !page.title[loc]) {
+            page.title[loc] = page.title[defaultLoc] || '';
+          }
+          page.sections.forEach(function (sec) {
+            addLocaleToContent(sec.content, loc, defaultLoc);
+          });
+        });
+      });
+
+      markDirty();
+      refreshSidebar();
+      overlay.remove();
+      showToast('Languages updated to: ' + selected.join(', ') + '. Save to apply.');
+    });
+  }
+
+  function addLocaleToContent(content, locale, fallbackLocale) {
+    if (!content || typeof content !== 'object') return;
+    Object.keys(content).forEach(function (key) {
+      var val = content[key];
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        // Check if it's a translatable field (has locale keys)
+        if (val[fallbackLocale] !== undefined && val[locale] === undefined) {
+          val[locale] = val[fallbackLocale];
+        } else {
+          addLocaleToContent(val, locale, fallbackLocale);
+        }
+      } else if (Array.isArray(val)) {
+        val.forEach(function (item) {
+          if (item && typeof item === 'object' && !Array.isArray(item)) {
+            if (item[fallbackLocale] !== undefined && item[locale] === undefined) {
+              item[locale] = item[fallbackLocale];
+            }
+          }
+        });
+      }
+    });
+  }
+
   // ── Add Page Modal ─────────────────────────────────────────
   function showAddPageModal() {
     var overlay = document.createElement('div');
@@ -509,17 +681,19 @@
       '</div>';
     document.body.appendChild(overlay);
 
+    document.getElementById('cms-new-page-title').focus();
+
     document.getElementById('cms-new-page-cancel').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
 
     document.getElementById('cms-new-page-submit').addEventListener('click', function () {
       var title = document.getElementById('cms-new-page-title').value.trim();
-      var slug = document.getElementById('cms-new-page-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      var slug = document.getElementById('cms-new-page-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '');
       if (!title || !slug) { showToast('Title and slug are required.', 'error'); return; }
       if (pendingChanges[slug]) { showToast('A page with that slug already exists.', 'error'); return; }
 
       var titleObj = {};
-      siteData.locales.forEach(function (loc) { titleObj[loc] = title; });
+      pendingSiteChanges.locales.forEach(function (loc) { titleObj[loc] = title; });
 
       var maxOrder = 0;
       Object.values(pendingChanges).forEach(function (p) {
@@ -537,7 +711,11 @@
       markDirty();
       refreshSidebar();
       overlay.remove();
-      showToast('Page "' + title + '" created. Add sections and save.');
+
+      // Ensure sidebar is open so user sees the new page
+      if (!sidebarOpen) toggleSidebar();
+
+      showToast('Page "' + title + '" created! Add sections, then save. The page URL (/' + slug + ') will be live after the site rebuilds.');
     });
   }
 
@@ -583,13 +761,91 @@
     var content = getDefaultContent(type);
 
     pageData.sections.push({ id: id, type: type, content: content });
+
+    // Render a visible placeholder section on the page
+    renderSectionPlaceholder(id, type, content);
+
     markDirty();
     refreshSidebar();
-    showToast('Section added. Save and reload to see it.');
+    showToast('Section "' + type + '" added! You can edit text below. Save to finalize.');
+  }
+
+  function renderSectionPlaceholder(id, type, content) {
+    var main = document.querySelector('main');
+    if (!main) return;
+
+    var section = document.createElement('section');
+    section.className = 'cms-placeholder-section';
+    section.setAttribute('data-cms-section-id', id);
+
+    var label = document.createElement('div');
+    label.className = 'cms-placeholder-label';
+    label.textContent = type.toUpperCase() + ' section (new)';
+    section.appendChild(label);
+
+    // Render editable content based on type
+    var pageName = getCurrentPageSlug() === '' ? 'home' : getCurrentPageSlug();
+    var file = 'pages/' + pageName;
+
+    if (content.title) {
+      var h2 = document.createElement('h2');
+      h2.textContent = getLocalizedValue(content.title, currentLocale) || 'Title';
+      h2.setAttribute('contenteditable', 'true');
+      h2.setAttribute('data-cms-file', file);
+      h2.setAttribute('data-cms-section', id);
+      h2.setAttribute('data-cms-field', 'title');
+      h2.classList.add('cms-editable');
+      initTextEditable(h2);
+      section.appendChild(h2);
+    }
+
+    if (content.body) {
+      var p = document.createElement('p');
+      p.textContent = getLocalizedValue(content.body, currentLocale) || 'Your text here.';
+      p.setAttribute('contenteditable', 'true');
+      p.setAttribute('data-cms-file', file);
+      p.setAttribute('data-cms-section', id);
+      p.setAttribute('data-cms-field', 'body');
+      p.classList.add('cms-editable');
+      initTextEditable(p);
+      section.appendChild(p);
+    }
+
+    if (content.subtitle) {
+      var sub = document.createElement('p');
+      sub.textContent = getLocalizedValue(content.subtitle, currentLocale) || 'Subtitle';
+      sub.setAttribute('contenteditable', 'true');
+      sub.setAttribute('data-cms-file', file);
+      sub.setAttribute('data-cms-section', id);
+      sub.setAttribute('data-cms-field', 'subtitle');
+      sub.classList.add('cms-editable');
+      initTextEditable(sub);
+      section.appendChild(sub);
+    }
+
+    if (content.description) {
+      var desc = document.createElement('p');
+      desc.textContent = getLocalizedValue(content.description, currentLocale) || 'Description';
+      desc.setAttribute('contenteditable', 'true');
+      desc.setAttribute('data-cms-file', file);
+      desc.setAttribute('data-cms-section', id);
+      desc.setAttribute('data-cms-field', 'description');
+      desc.classList.add('cms-editable');
+      initTextEditable(desc);
+      section.appendChild(desc);
+    }
+
+    var note = document.createElement('p');
+    note.className = 'cms-placeholder-note';
+    note.textContent = 'Full styling will appear after saving and rebuild.';
+    section.appendChild(note);
+
+    main.appendChild(section);
+    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function getDefaultContent(type) {
-    var locales = siteData.locales;
+    var locales = pendingSiteChanges.locales;
     var makeTranslatable = function (val) {
       var obj = {};
       locales.forEach(function (loc) { obj[loc] = val; });
@@ -678,7 +934,7 @@
       dirty = false;
       status.textContent = 'Saved! Rebuilding...';
       saveBtn.disabled = true;
-      showToast('Changes saved! Site will rebuild in ~30 seconds.', 'success');
+      showToast('Changes saved! Site will rebuild in ~30 seconds. Reload to see full changes.', 'success');
     } catch (e) {
       status.textContent = 'Save failed!';
       status.classList.add('cms-dirty');
@@ -708,7 +964,7 @@
   function getLocalizedValue(field, locale) {
     if (!field) return '';
     if (typeof field === 'string') return field;
-    return field[locale] || field[siteData.defaultLocale] || '';
+    return field[locale] || field[pendingSiteChanges.defaultLocale] || '';
   }
 
   function setTranslatableField(file, sectionId, field, value, locale) {
@@ -745,7 +1001,7 @@
 
   function getCurrentPageSlug() {
     var path = window.location.pathname.replace(/\/$/, '');
-    if (currentLocale !== siteData.defaultLocale) {
+    if (currentLocale !== pendingSiteChanges.defaultLocale) {
       path = path.replace(new RegExp('^/' + currentLocale), '');
     }
     path = path.replace(/^\//, '');
@@ -767,7 +1023,7 @@
     toast.className = 'cms-toast' + (type ? ' cms-toast-' + type : '');
     toast.textContent = message;
     document.body.appendChild(toast);
-    setTimeout(function () { toast.remove(); }, 4000);
+    setTimeout(function () { toast.remove(); }, 5000);
   }
 
   // ── Init ───────────────────────────────────────────────────

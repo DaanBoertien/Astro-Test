@@ -403,6 +403,77 @@ body.cms-edit-mode .cms-item-delete:hover {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Placeholder sections (newly added via CMS) ── */
+.cms-placeholder-section {
+  border: 2px dashed var(--color-accent, #B8860B);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 900px;
+  background: #fdf8ef;
+  position: relative;
+}
+
+.cms-placeholder-label {
+  position: absolute;
+  top: -0.75rem;
+  left: 1rem;
+  background: var(--color-accent, #B8860B);
+  color: white;
+  font-size: 0.65rem;
+  font-family: system-ui, sans-serif;
+  padding: 0.15rem 0.6rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cms-placeholder-section h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-charcoal, #2C2C2C);
+}
+
+.cms-placeholder-section p {
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.cms-placeholder-note {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #999 !important;
+  margin-top: 1rem;
+}
+
+/* ── New concert rows ── */
+.cms-new-concert-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #fdf8ef;
+  border: 2px dashed var(--color-accent, #B8860B);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cms-new-concert-row span {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  min-width: 80px;
+  background: white;
+}
+
+/* ── Language checkbox in modal ── */
+.cms-lang-checkbox input[type="checkbox"] {
+  accent-color: #2563eb;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 /* ── Adjust page for toolbar ── */
 body.cms-edit-mode {
   padding-bottom: 50px;
