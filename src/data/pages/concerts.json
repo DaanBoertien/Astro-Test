@@ -1,6 +1,8 @@
 {
   "slug": "concerts",
-  "title": { "en": "Concerts" },
+  "title": {
+    "en": "Concerts"
+  },
   "showInNav": true,
   "navOrder": 2,
   "sections": [
@@ -8,8 +10,12 @@
       "id": "calendar",
       "type": "concert-list",
       "content": {
-        "upcomingTitle": { "en": "Upcoming" },
-        "pastTitle": { "en": "Past Performances" }
+        "upcomingTitle": {
+          "en": "Upcoming"
+        },
+        "pastTitle": {
+          "en": "Past Performances"
+        }
       }
     }
   ]
