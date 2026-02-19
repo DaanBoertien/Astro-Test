@@ -1,4 +1,4 @@
-export default async function handler(req, context) {
+export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -6,9 +6,12 @@ export default async function handler(req, context) {
     });
   }
 
-  // Verify Netlify Identity JWT
-  const { user } = context.clientContext || {};
-  if (!user) {
+  // Verify password from Authorization header
+  const authHeader = req.headers.get('authorization') || '';
+  const password = authHeader.replace(/^Bearer\s+/i, '');
+  const CMS_PASSWORD = process.env.CMS_PASSWORD;
+
+  if (!CMS_PASSWORD || password !== CMS_PASSWORD) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -77,7 +80,7 @@ export default async function handler(req, context) {
               message: `CMS: delete ${fileName}`,
               sha,
               branch: GITHUB_BRANCH,
-              committer: { name: 'CMS Editor', email: user.email },
+              committer: { name: 'CMS Editor', email: 'cms@site.local' },
             }),
           });
           if (!deleteResp.ok) {
@@ -94,7 +97,7 @@ export default async function handler(req, context) {
         message: `CMS: update ${fileName}`,
         content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
         branch: GITHUB_BRANCH,
-        committer: { name: 'CMS Editor', email: user.email },
+        committer: { name: 'CMS Editor', email: 'cms@site.local' },
       };
       if (sha) body.sha = sha;
 

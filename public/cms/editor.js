@@ -2,13 +2,13 @@
   'use strict';
 
   const HASH_TRIGGER = '#cms';
-  let identity = null;
+  let cmsPassword = null;
   let editMode = false;
   let currentLocale = 'en';
   let siteData = null;
-  let allPagesData = {};   // { "home": {...}, "bio": {...} }
+  let allPagesData = {};
   let concertsData = null;
-  let pendingChanges = {}; // Same structure, modified by edits
+  let pendingChanges = {};
   let pendingSiteChanges = null;
   let pendingConcertsChanges = null;
   let sidebarOpen = false;
@@ -16,30 +16,60 @@
 
   // ── Bootstrap ──────────────────────────────────────────────
   function init() {
-    identity = window.netlifyIdentity;
-    if (!identity) return;
+    if (window.location.hash !== HASH_TRIGGER) return;
 
-    if (window.location.hash === HASH_TRIGGER) {
-      const user = identity.currentUser();
-      if (user) {
-        activateEditMode(user);
-      } else {
-        identity.open('login');
-        identity.on('login', function onLogin(user) {
-          identity.off('login', onLogin);
-          identity.close();
-          activateEditMode(user);
-        });
-      }
+    // Check for saved session
+    cmsPassword = sessionStorage.getItem('cms_password');
+    if (cmsPassword) {
+      activateEditMode();
+    } else {
+      showLoginPrompt();
     }
   }
 
+  // ── Login Prompt ───────────────────────────────────────────
+  function showLoginPrompt() {
+    var overlay = document.createElement('div');
+    overlay.className = 'cms-modal-overlay';
+    overlay.innerHTML =
+      '<div class="cms-modal">' +
+        '<h3>CMS Login</h3>' +
+        '<input class="cms-modal-input" id="cms-login-password" type="password" placeholder="Password" />' +
+        '<button class="cms-modal-option" id="cms-login-submit" style="width:100%">Log in</button>' +
+        '<button class="cms-modal-cancel" id="cms-login-cancel">Cancel</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    var passwordInput = document.getElementById('cms-login-password');
+    var submitBtn = document.getElementById('cms-login-submit');
+
+    passwordInput.focus();
+
+    function doLogin() {
+      var pw = passwordInput.value;
+      if (!pw) return;
+      cmsPassword = pw;
+      sessionStorage.setItem('cms_password', pw);
+      overlay.remove();
+      activateEditMode();
+    }
+
+    submitBtn.addEventListener('click', doLogin);
+    passwordInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') doLogin();
+    });
+
+    document.getElementById('cms-login-cancel').addEventListener('click', function () {
+      overlay.remove();
+      window.location.hash = '';
+    });
+  }
+
   // ── Activate Edit Mode ─────────────────────────────────────
-  async function activateEditMode(user) {
+  async function activateEditMode() {
     editMode = true;
     document.body.classList.add('cms-edit-mode');
 
-    // Load data
     try {
       siteData = await fetchJson('/data/site.json');
       concertsData = await fetchJson('/data/concerts.json');
@@ -47,13 +77,12 @@
       pendingConcertsChanges = structuredClone(concertsData);
       currentLocale = siteData.defaultLocale;
 
-      // Load all page files
-      const pageFiles = ['home', 'bio', 'concerts', 'contact'];
-      for (const name of pageFiles) {
+      var pageFiles = ['home', 'bio', 'concerts', 'contact'];
+      for (var i = 0; i < pageFiles.length; i++) {
         try {
-          const data = await fetchJson('/data/pages/' + name + '.json');
-          allPagesData[name] = data;
-          pendingChanges[name] = structuredClone(data);
+          var data = await fetchJson('/data/pages/' + pageFiles[i] + '.json');
+          allPagesData[pageFiles[i]] = data;
+          pendingChanges[pageFiles[i]] = structuredClone(data);
         } catch (e) { /* page may not exist */ }
       }
     } catch (e) {
@@ -62,7 +91,7 @@
     }
 
     initEditableElements();
-    injectToolbar(user);
+    injectToolbar();
     injectSidebar();
 
     window.addEventListener('beforeunload', function (e) {
@@ -87,12 +116,10 @@
       }
     });
 
-    // List containers
     document.querySelectorAll('[data-cms-type="list"]').forEach(function (el) {
       initListEditable(el);
     });
 
-    // Concert list containers
     document.querySelectorAll('[data-cms-type="concert-list"]').forEach(function (el) {
       initConcertListEditable(el);
     });
@@ -190,7 +217,6 @@
     addBtn.textContent = '+ Add item';
     container.appendChild(addBtn);
 
-    // Delete buttons on existing items
     container.querySelectorAll(':scope > [data-cms-field]').forEach(function (item) {
       addItemDeleteBtn(item);
     });
@@ -224,7 +250,7 @@
     btn.addEventListener('click', function () {
       var file = el.dataset.cmsFile;
       var section = el.dataset.cmsSection;
-      var field = el.dataset.cmsField; // e.g. "items.2"
+      var field = el.dataset.cmsField;
       var parts = field.split('.');
       var arrayField = parts[0];
       var index = parseInt(parts[1]);
@@ -245,7 +271,6 @@
 
   // ── Concert List Editing ───────────────────────────────────
   function initConcertListEditable(container) {
-    // Add delete buttons to each concert row
     container.querySelectorAll('.concert-row').forEach(function (row) {
       var idx = row.dataset.cmsConcertIndex;
       if (idx === undefined) return;
@@ -263,7 +288,6 @@
       row.appendChild(btn);
     });
 
-    // Add concert button
     var addBtn = document.createElement('button');
     addBtn.className = 'cms-list-add';
     addBtn.textContent = '+ Add concert';
@@ -282,11 +306,11 @@
   }
 
   // ── Toolbar ────────────────────────────────────────────────
-  function injectToolbar(user) {
+  function injectToolbar() {
     var toolbar = document.createElement('div');
     toolbar.id = 'cms-toolbar';
     toolbar.innerHTML =
-      '<span class="cms-toolbar-label">' + escapeHtml(user.email) + '</span>' +
+      '<span class="cms-toolbar-label">CMS Editor</span>' +
       '<button id="cms-sidebar-toggle">Panels</button>' +
       '<span class="cms-toolbar-status" id="cms-status">No changes</span>' +
       '<button id="cms-save" disabled>Save</button>' +
@@ -295,7 +319,8 @@
 
     document.getElementById('cms-save').addEventListener('click', save);
     document.getElementById('cms-logout').addEventListener('click', function () {
-      identity.logout();
+      sessionStorage.removeItem('cms_password');
+      cmsPassword = null;
       window.location.hash = '';
       window.location.reload();
     });
@@ -379,7 +404,6 @@
   }
 
   function bindSidebarEvents() {
-    // Language tabs
     document.querySelectorAll('.cms-lang-tab').forEach(function (tab) {
       tab.addEventListener('click', function () {
         currentLocale = tab.dataset.locale;
@@ -388,7 +412,6 @@
       });
     });
 
-    // Page navigation
     document.querySelectorAll('.cms-page-item').forEach(function (item) {
       item.addEventListener('click', function (e) {
         if (e.target.classList.contains('cms-page-delete')) return;
@@ -403,7 +426,6 @@
       });
     });
 
-    // Delete page
     document.querySelectorAll('.cms-page-delete').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -417,13 +439,11 @@
       });
     });
 
-    // Add page
     var addPageBtn = document.getElementById('cms-add-page');
     if (addPageBtn) {
       addPageBtn.addEventListener('click', function () { showAddPageModal(); });
     }
 
-    // Section controls
     document.querySelectorAll('.cms-section-up').forEach(function (btn) {
       btn.addEventListener('click', function () { moveSection(parseInt(btn.dataset.idx), -1); });
     });
@@ -446,7 +466,6 @@
       });
     });
 
-    // Add section
     var addSectionBtn = document.getElementById('cms-add-section');
     if (addSectionBtn) {
       addSectionBtn.addEventListener('click', function () { showAddSectionModal(); });
@@ -549,8 +568,7 @@
 
     overlay.querySelectorAll('.cms-modal-option').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var type = btn.dataset.type;
-        addSection(type);
+        addSection(btn.dataset.type);
         overlay.remove();
       });
     });
@@ -608,10 +626,8 @@
     saveBtn.disabled = true;
 
     try {
-      var token = await identity.currentUser().jwt();
       var files = {};
 
-      // Check which files changed
       if (JSON.stringify(pendingSiteChanges) !== JSON.stringify(siteData)) {
         files['site'] = pendingSiteChanges;
       }
@@ -620,14 +636,12 @@
       }
 
       Object.keys(pendingChanges).forEach(function (key) {
-        // Always include — could be new page or modified
         files['pages/' + key] = pendingChanges[key];
       });
 
-      // Check for deleted pages
       Object.keys(allPagesData).forEach(function (key) {
         if (!pendingChanges[key]) {
-          files['pages/' + key] = null; // null = delete
+          files['pages/' + key] = null;
         }
       });
 
@@ -640,17 +654,23 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + cmsPassword,
         },
         body: JSON.stringify({ files: files }),
       });
+
+      if (response.status === 401) {
+        sessionStorage.removeItem('cms_password');
+        showToast('Wrong password. Please log in again.', 'error');
+        setTimeout(function () { window.location.reload(); }, 1500);
+        return;
+      }
 
       if (!response.ok) {
         var err = await response.json();
         throw new Error(err.error || 'Save failed');
       }
 
-      // Update originals
       siteData = structuredClone(pendingSiteChanges);
       concertsData = structuredClone(pendingConcertsChanges);
       allPagesData = structuredClone(pendingChanges);
@@ -698,7 +718,6 @@
     var section = pageData.sections.find(function (s) { return s.id === sectionId; });
     if (!section) return;
 
-    // Handle nested fields like "items.2"
     var parts = field.split('.');
     var target = section.content;
     for (var i = 0; i < parts.length - 1; i++) {
@@ -726,7 +745,6 @@
 
   function getCurrentPageSlug() {
     var path = window.location.pathname.replace(/\/$/, '');
-    // Strip locale prefix if not default
     if (currentLocale !== siteData.defaultLocale) {
       path = path.replace(new RegExp('^/' + currentLocale), '');
     }
