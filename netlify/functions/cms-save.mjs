@@ -38,8 +38,8 @@ export default async function handler(req) {
     }
   }
 
-  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-  const GITHUB_REPO = process.env.GITHUB_REPO;
+  const GITHUB_TOKEN = process.env.GITHUB_TOKEN || process.env.TUNESHIFT_TOKEN;
+  const GITHUB_REPO = process.env.GITHUB_REPO || process.env.REPO_NAME;
   const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'master';
 
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
