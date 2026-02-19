@@ -1,6 +1,14 @@
 (function () {
   'use strict';
 
+  // Global error handler to surface hidden JS errors
+  window.addEventListener('error', function (e) {
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:1rem;z-index:99999;font-family:monospace;font-size:14px';
+    errDiv.textContent = 'CMS Error: ' + e.message + ' at ' + (e.filename || '') + ':' + (e.lineno || '');
+    document.body.appendChild(errDiv);
+  });
+
   const HASH_TRIGGER = '#cms';
   let cmsPassword = null;
   let editMode = false;
