@@ -327,27 +327,82 @@
     container.appendChild(addBtn);
 
     addBtn.addEventListener('click', function () {
+      // Default to 1 month from now
+      var futureDate = new Date();
+      futureDate.setMonth(futureDate.getMonth() + 1);
+      var dateStr = futureDate.toISOString().slice(0, 10);
+
       var newConcert = {
-        date: new Date().toISOString().slice(0, 10),
-        venue: 'New Venue',
+        date: dateStr,
+        venue: 'Venue',
         city: 'City',
         program: 'Program'
       };
       var idx = pendingConcertsChanges.concerts.length;
       pendingConcertsChanges.concerts.push(newConcert);
 
-      // Render a new editable concert row in the DOM
+      // Build row matching the real Astro-rendered structure
       var row = document.createElement('div');
-      row.className = 'concert-row cms-new-concert-row';
+      row.className = 'concert-row';
       row.dataset.cmsConcertIndex = idx;
-      row.innerHTML =
-        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.date">' + escapeHtml(newConcert.date) + '</span>' +
-        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.venue">' + escapeHtml(newConcert.venue) + '</span>' +
-        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.city">' + escapeHtml(newConcert.city) + '</span>' +
-        '<span class="cms-editable" contenteditable="true" data-cms-file="concerts" data-cms-field="concerts.' + idx + '.program">' + escapeHtml(newConcert.program) + '</span>';
 
-      // Attach input handlers to each editable span
-      row.querySelectorAll('[contenteditable]').forEach(function (el) {
+      // Copy Astro scoped style attribute from an existing row
+      var existingRow = container.querySelector('.concert-row');
+      if (existingRow) {
+        Array.from(existingRow.attributes).forEach(function (attr) {
+          if (attr.name.startsWith('data-astro-cid')) {
+            row.setAttribute(attr.name, attr.value);
+          }
+        });
+      }
+
+      var dateDiv = document.createElement('div');
+      dateDiv.className = 'concert-date';
+      dateDiv.setAttribute('data-cms-file', 'concerts');
+      dateDiv.setAttribute('data-cms-field', 'concerts.' + idx + '.date');
+      dateDiv.setAttribute('data-cms-type', 'date');
+      dateDiv.textContent = formatDateForDisplay(dateStr);
+      copyAstroCid(existingRow, dateDiv);
+
+      var detailsDiv = document.createElement('div');
+      detailsDiv.className = 'concert-details';
+      copyAstroCid(existingRow, detailsDiv);
+
+      var venueEl = document.createElement('strong');
+      venueEl.setAttribute('data-cms-file', 'concerts');
+      venueEl.setAttribute('data-cms-field', 'concerts.' + idx + '.venue');
+      venueEl.setAttribute('data-cms-type', 'text');
+      venueEl.textContent = newConcert.venue;
+      copyAstroCid(existingRow, venueEl);
+
+      var separator = document.createTextNode(' \u2014 ');
+
+      var cityEl = document.createElement('span');
+      cityEl.setAttribute('data-cms-file', 'concerts');
+      cityEl.setAttribute('data-cms-field', 'concerts.' + idx + '.city');
+      cityEl.setAttribute('data-cms-type', 'text');
+      cityEl.textContent = newConcert.city;
+      copyAstroCid(existingRow, cityEl);
+
+      var programEl = document.createElement('span');
+      programEl.className = 'concert-program';
+      programEl.setAttribute('data-cms-file', 'concerts');
+      programEl.setAttribute('data-cms-field', 'concerts.' + idx + '.program');
+      programEl.setAttribute('data-cms-type', 'text');
+      programEl.textContent = newConcert.program;
+      copyAstroCid(existingRow, programEl);
+
+      detailsDiv.appendChild(venueEl);
+      detailsDiv.appendChild(separator);
+      detailsDiv.appendChild(cityEl);
+      detailsDiv.appendChild(programEl);
+      row.appendChild(dateDiv);
+      row.appendChild(detailsDiv);
+
+      // Make all data-cms fields editable
+      row.querySelectorAll('[data-cms-field]').forEach(function (el) {
+        el.classList.add('cms-editable');
+        el.setAttribute('contenteditable', 'true');
         el.addEventListener('input', function () {
           setNestedValue(pendingConcertsChanges, el.dataset.cmsField, el.innerText.trim());
           markDirty();
@@ -367,9 +422,17 @@
       });
       row.appendChild(delBtn);
 
-      container.insertBefore(row, addBtn);
+      // Insert into the upcoming concert list (first .concert-list in this container)
+      var upcomingList = container.closest('section')
+        ? container
+        : container.querySelector('.concert-list');
+      if (!upcomingList) upcomingList = container;
+
+      // Insert before the add button (which is inside the concert-list)
+      upcomingList.insertBefore(row, addBtn);
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
       markDirty();
-      showToast('Concert added. Edit the fields below, then save.');
+      showToast('Concert added. Edit the fields, then save.');
     });
   }
 
@@ -1024,6 +1087,21 @@
 
   function escapeAttr(str) {
     return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function formatDateForDisplay(dateStr) {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+  }
+
+  function copyAstroCid(sourceEl, targetEl) {
+    if (!sourceEl) return;
+    Array.from(sourceEl.attributes).forEach(function (attr) {
+      if (attr.name.startsWith('data-astro-cid')) {
+        targetEl.setAttribute(attr.name, attr.value);
+      }
+    });
   }
 
   function showToast(message, type) {
