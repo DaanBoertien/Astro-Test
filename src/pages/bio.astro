@@ -1,0 +1,123 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const awards = [
+  'First Prize, International Chopin Piano Competition (2018)',
+  'Avery Fisher Career Grant (2019)',
+  'Gramophone Award for Best Instrumental Recording (2021)',
+  'Royal Philharmonic Society Young Artist Award (2022)',
+];
+---
+
+<Layout title="Bio — Elena Vasquez" description="Biography of concert pianist Elena Vasquez.">
+  <section class="section">
+    <div class="container">
+      <h1 class="section-title">Biography</h1>
+    </div>
+  </section>
+
+  <section class="section bio-section">
+    <div class="container bio-grid">
+      <div class="bio-image">
+        <img
+          src="https://images.unsplash.com/photo-1594897030264-ab7d87efc473?w=800&q=80"
+          alt="Elena Vasquez at the piano"
+        />
+      </div>
+      <div class="bio-text">
+        <p>
+          Born in Buenos Aires to a family of musicians, Elena Vasquez began her
+          piano studies at the age of five under the guidance of her grandmother,
+          a former student of Martha Argerich. By sixteen, she had already performed
+          as a soloist with the Buenos Aires Philharmonic.
+        </p>
+        <p>
+          Elena went on to study at the Juilliard School in New York, where she
+          worked closely with renowned pedagogue Emanuel Ax. Her breakthrough came
+          in 2018 when she won First Prize at the International Chopin Piano
+          Competition in Warsaw, captivating audiences with what the jury described
+          as "an interpretation of extraordinary poetry and intelligence."
+        </p>
+        <p>
+          Since then, Elena has performed with leading orchestras around the world,
+          including the Berlin Philharmonic, London Symphony Orchestra, and the
+          New York Philharmonic. Her recordings of the complete Chopin Nocturnes
+          and Debussy's Preludes have been met with widespread critical acclaim.
+        </p>
+        <p>
+          Beyond the concert stage, Elena is passionate about music education. She
+          regularly gives masterclasses at conservatories across Europe and South
+          America, and founded the Vasquez Foundation, which provides scholarships
+          to young pianists from underrepresented communities.
+        </p>
+        <p>
+          Elena currently divides her time between Amsterdam and Buenos Aires. When
+          not touring, she can be found exploring the city's art galleries or
+          cooking traditional Argentine cuisine for friends.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section awards-section">
+    <div class="container">
+      <h2 class="section-title">Awards & Recognition</h2>
+      <ul class="awards-list">
+        {awards.map(award => (
+          <li>{award}</li>
+        ))}
+      </ul>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .bio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .bio-image img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+
+  .bio-text p {
+    margin-bottom: 1.25rem;
+  }
+
+  .awards-section {
+    background: #F3F0EB;
+  }
+
+  .awards-list {
+    max-width: 600px;
+    margin: 0 auto;
+    list-style: none;
+  }
+
+  .awards-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+    text-align: center;
+    color: var(--color-text-light);
+  }
+
+  .awards-list li:last-child {
+    border-bottom: none;
+  }
+
+  @media (max-width: 768px) {
+    .bio-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .bio-image img {
+      aspect-ratio: 4 / 3;
+    }
+  }
+</style>

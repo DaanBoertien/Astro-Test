@@ -1,0 +1,164 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const upcomingConcerts = [
+  { date: 'March 15, 2026', venue: 'Concertgebouw', city: 'Amsterdam' },
+  { date: 'April 3, 2026', venue: 'Wiener Musikverein', city: 'Vienna' },
+  { date: 'May 22, 2026', venue: 'Carnegie Hall', city: 'New York' },
+];
+---
+
+<Layout title="Elena Vasquez — Concert Pianist">
+  <section class="hero">
+    <div class="hero-overlay">
+      <div class="container hero-content">
+        <h1>Elena Vasquez</h1>
+        <p class="hero-subtitle">Concert Pianist</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container intro">
+      <p>
+        With performances spanning the great concert halls of Europe and the Americas,
+        Elena Vasquez brings a rare combination of technical brilliance and profound
+        emotional depth to the classical piano repertoire. Her interpretations of
+        Chopin, Rachmaninoff, and Debussy have been praised by critics as
+        "luminous" and "utterly captivating."
+      </p>
+    </div>
+  </section>
+
+  <section class="section upcoming-section">
+    <div class="container">
+      <h2 class="section-title">Upcoming Concerts</h2>
+      <div class="concert-list">
+        {upcomingConcerts.map(concert => (
+          <div class="concert-card">
+            <span class="concert-date">{concert.date}</span>
+            <span class="concert-venue">{concert.venue}</span>
+            <span class="concert-city">{concert.city}</span>
+          </div>
+        ))}
+      </div>
+      <div class="cta">
+        <a href="/concerts" class="btn">View Full Calendar</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cta-section">
+    <div class="container cta-block">
+      <h2>Get in Touch</h2>
+      <p>For booking inquiries, collaborations, or press requests.</p>
+      <a href="/contact" class="btn">Contact</a>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero {
+    height: 70vh;
+    min-height: 400px;
+    background: url('https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=1600&q=80') center/cover no-repeat;
+    position: relative;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-content {
+    text-align: center;
+    color: #fff;
+  }
+
+  .hero-content h1 {
+    font-size: 4rem;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  .intro {
+    max-width: 750px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 1.1rem;
+  }
+
+  .concert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .concert-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--color-border);
+    gap: 1rem;
+  }
+
+  .concert-date {
+    color: var(--color-accent);
+    font-weight: 500;
+    min-width: 140px;
+  }
+
+  .concert-venue {
+    font-weight: 700;
+    font-family: var(--font-heading);
+    flex: 1;
+  }
+
+  .concert-city {
+    color: var(--color-text-light);
+  }
+
+  .cta {
+    text-align: center;
+    margin-top: 2rem;
+  }
+
+  .cta-section {
+    background: #F3F0EB;
+  }
+
+  .cta-block {
+    text-align: center;
+  }
+
+  .cta-block p {
+    margin: 0.75rem 0 1.5rem;
+    color: var(--color-text-light);
+  }
+
+  @media (max-width: 768px) {
+    .hero-content h1 {
+      font-size: 2.5rem;
+    }
+
+    .concert-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+  }
+</style>
