@@ -1,14 +1,6 @@
 (function () {
   'use strict';
 
-  // Global error handler to surface hidden JS errors
-  window.addEventListener('error', function (e) {
-    var errDiv = document.createElement('div');
-    errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:1rem;z-index:99999;font-family:monospace;font-size:14px';
-    errDiv.textContent = 'CMS Error: ' + e.message + ' at ' + (e.filename || '') + ':' + (e.lineno || '');
-    document.body.appendChild(errDiv);
-  });
-
   const HASH_TRIGGER = '#cms';
   let cmsPassword = null;
   let editMode = false;
@@ -654,22 +646,38 @@
     var overlay = document.createElement('div');
     overlay.className = 'cms-modal-overlay';
 
-    var html = '<div class="cms-modal"><h3>Manage Languages</h3>' +
-      '<p style="color:#aaa;font-size:0.8rem;margin-bottom:1rem">Choose up to 3 languages. The first selected language is the default.</p>';
-
     var currentLocales = pendingSiteChanges.locales.slice();
-
-    Object.keys(AVAILABLE_LOCALES).forEach(function (code) {
-      var checked = currentLocales.indexOf(code) !== -1;
-      var isDefault = code === pendingSiteChanges.defaultLocale;
-      html += '<label class="cms-lang-checkbox" style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;cursor:pointer;color:#ddd">' +
-        '<input type="checkbox" data-locale="' + code + '"' + (checked ? ' checked' : '') + (isDefault ? ' disabled' : '') + ' />' +
-        '<span>' + escapeHtml(AVAILABLE_LOCALES[code]) + ' (' + code + ')' + (isDefault ? ' — default' : '') + '</span>' +
-        '</label>';
+    var availableToAdd = Object.keys(AVAILABLE_LOCALES).filter(function (code) {
+      return currentLocales.indexOf(code) === -1;
     });
 
-    html += '<button class="cms-modal-option" id="cms-lang-save" style="width:100%;margin-top:1rem">Apply</button>' +
-      '<button class="cms-modal-cancel" id="cms-lang-cancel">Cancel</button></div>';
+    var html = '<div class="cms-modal"><h3>Manage Languages</h3>';
+
+    // Active languages
+    html += '<p style="color:#93b4ff;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem">Active languages (' + currentLocales.length + '/3)</p>';
+    currentLocales.forEach(function (code) {
+      var isDefault = code === pendingSiteChanges.defaultLocale;
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:#2a2a3e;border-radius:4px;margin-bottom:0.35rem">' +
+        '<span style="color:#eee">' + escapeHtml(AVAILABLE_LOCALES[code] || code) + ' (' + code + ')' + (isDefault ? ' — default' : '') + '</span>' +
+        (isDefault ? '' : '<button class="cms-lang-remove" data-locale="' + code + '" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.9rem" title="Remove">\u00d7</button>') +
+        '</div>';
+    });
+
+    // Add language (only show if under the limit)
+    if (currentLocales.length < 3 && availableToAdd.length > 0) {
+      html += '<p style="color:#888;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;margin:1rem 0 0.5rem">Add a language</p>';
+      html += '<select id="cms-lang-add-select" style="width:100%;padding:0.5rem;background:#2a2a3e;color:#eee;border:1px solid #444;border-radius:4px;font-family:inherit;margin-bottom:0.5rem">';
+      html += '<option value="">Select a language...</option>';
+      availableToAdd.forEach(function (code) {
+        html += '<option value="' + code + '">' + escapeHtml(AVAILABLE_LOCALES[code]) + ' (' + code + ')</option>';
+      });
+      html += '</select>';
+      html += '<button class="cms-modal-option" id="cms-lang-add-btn" style="width:100%">+ Add language</button>';
+    } else if (currentLocales.length >= 3) {
+      html += '<p style="color:#888;font-size:0.75rem;margin-top:1rem;font-style:italic">Maximum 3 languages reached. Remove one to add another.</p>';
+    }
+
+    html += '<button class="cms-modal-cancel" id="cms-lang-cancel" style="margin-top:1rem">Close</button></div>';
 
     overlay.innerHTML = html;
     document.body.appendChild(overlay);
@@ -677,54 +685,54 @@
     document.getElementById('cms-lang-cancel').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
 
-    document.getElementById('cms-lang-save').addEventListener('click', function () {
-      var selected = [];
-      overlay.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
-        if (cb.checked) selected.push(cb.dataset.locale);
-      });
+    // Add language button
+    var addBtn = document.getElementById('cms-lang-add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        var select = document.getElementById('cms-lang-add-select');
+        var code = select.value;
+        if (!code) { showToast('Select a language first.', 'error'); return; }
 
-      if (selected.length === 0) {
-        showToast('You must have at least one language.', 'error');
-        return;
-      }
-      if (selected.length > 3) {
-        showToast('Maximum 3 languages allowed.', 'error');
-        return;
-      }
+        var defaultLoc = pendingSiteChanges.defaultLocale;
+        pendingSiteChanges.locales.push(code);
+        pendingSiteChanges.localeNames[code] = AVAILABLE_LOCALES[code] || code;
 
-      // Ensure default locale stays first
-      var defaultLoc = pendingSiteChanges.defaultLocale;
-      if (selected.indexOf(defaultLoc) === -1) {
-        selected.unshift(defaultLoc);
-      } else if (selected[0] !== defaultLoc) {
-        selected.splice(selected.indexOf(defaultLoc), 1);
-        selected.unshift(defaultLoc);
-      }
-
-      pendingSiteChanges.locales = selected;
-      var names = {};
-      selected.forEach(function (code) {
-        names[code] = AVAILABLE_LOCALES[code] || code;
-      });
-      pendingSiteChanges.localeNames = names;
-
-      // Add empty locale entries to all translatable fields in all pages
-      Object.keys(pendingChanges).forEach(function (pageKey) {
-        var page = pendingChanges[pageKey];
-        selected.forEach(function (loc) {
-          if (page.title && typeof page.title === 'object' && !page.title[loc]) {
-            page.title[loc] = page.title[defaultLoc] || '';
+        // Add locale entries to all translatable fields
+        Object.keys(pendingChanges).forEach(function (pageKey) {
+          var page = pendingChanges[pageKey];
+          if (page.title && typeof page.title === 'object' && !page.title[code]) {
+            page.title[code] = page.title[defaultLoc] || '';
           }
           page.sections.forEach(function (sec) {
-            addLocaleToContent(sec.content, loc, defaultLoc);
+            addLocaleToContent(sec.content, code, defaultLoc);
           });
         });
-      });
 
-      markDirty();
-      refreshSidebar();
-      overlay.remove();
-      showToast('Languages updated to: ' + selected.join(', ') + '. Save to apply.');
+        markDirty();
+        refreshSidebar();
+        overlay.remove();
+        showToast(AVAILABLE_LOCALES[code] + ' added. Switch to it in the sidebar to edit translations.');
+      });
+    }
+
+    // Remove language buttons
+    overlay.querySelectorAll('.cms-lang-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.dataset.locale;
+        if (!confirm('Remove ' + (AVAILABLE_LOCALES[code] || code) + '? Translations for this language will be lost on save.')) return;
+
+        pendingSiteChanges.locales = pendingSiteChanges.locales.filter(function (l) { return l !== code; });
+        delete pendingSiteChanges.localeNames[code];
+
+        if (currentLocale === code) {
+          currentLocale = pendingSiteChanges.defaultLocale;
+        }
+
+        markDirty();
+        refreshSidebar();
+        overlay.remove();
+        showToast(AVAILABLE_LOCALES[code] + ' removed. Save to apply.');
+      });
     });
   }
 
